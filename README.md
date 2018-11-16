@@ -5,7 +5,7 @@ Utility for receiving push notifications from Esper on your laptop. Currently on
 ## Setup
 
 ```
-brew install terminal-notifier tmux
+brew install terminal-notifier tmux jq
 git clone https://github.com/scanner-research/notifier
 cd notifier
 pip3 install -r requirements.txt
