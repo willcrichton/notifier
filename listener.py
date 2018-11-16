@@ -2,6 +2,13 @@ import redis
 import subprocess as sp
 import json
 import os
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("node")
+args = parser.parse_args()
+NODE = args.node
+
 
 def run(s):
     return sp.check_output(s, shell=True).decode('utf-8').strip()
@@ -9,19 +16,20 @@ def run(s):
 
 def bench():
     run('''
-      cd {} && \
+      cd {downloads} && \
       rm -fr bench && \
       mkdir bench && cd bench && \
-      gcloud compute scp highcpu:esper/app/data/bench.tar.gz . && \
-      tar -xf bench.tar.gz'''.format(os.path.expanduser('~/Downloads'))
+      gcloud compute scp {node}:esper/app/data/bench.tar.gz . && \
+      tar -xf bench.tar.gz'''.format(
+        downloads=os.path.expanduser('~/Downloads'), node=NODE))
 
 
 def main():
     action_dispatch = {'bench': bench}
 
     host = run(
-        'gcloud compute instances describe highcpu --format json | jq -r ".networkInterfaces[0].accessConfigs[0].natIP"'
-    )
+        'gcloud compute instances describe {} --format json | jq -r ".networkInterfaces[0].accessConfigs[0].natIP"'.
+        format(NODE))
 
     r = redis.Redis(host=host, port=6379)
     print('Connected to Redis!')

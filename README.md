@@ -16,5 +16,5 @@ pip3 install -r requirements.txt
 Use tmux to start a session. Then run:
 
 ```
-python3 listener.py
+python3 listener.py <GCE node name>
 ```
