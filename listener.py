@@ -5,6 +5,7 @@ import os
 import argparse
 from redis.exceptions import ConnectionError, TimeoutError
 import time
+import traceback
 
 parser = argparse.ArgumentParser()
 parser.add_argument("node")
@@ -37,7 +38,7 @@ def main():
     try:
         while True:
             try:
-                r = redis.Redis(host=host, port=6379, socket_timeout=5)
+                r = redis.Redis(host=host, port=6379, socket_connect_timeout=5)
                 p = r.pubsub()
                 p.subscribe('main')
                 print('Connected!')
@@ -58,6 +59,7 @@ def main():
                         shell=True)
 
             except (ConnectionError, TimeoutError):
+                traceback.print_exc()
                 print('Retrying...')
                 time.sleep(5)
 
