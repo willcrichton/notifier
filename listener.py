@@ -3,6 +3,8 @@ import subprocess as sp
 import json
 import os
 import argparse
+from redis.exceptions import ConnectionError, TimeoutError
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("node")
@@ -31,27 +33,33 @@ def main():
         'gcloud compute instances describe {} --format json | jq -r ".networkInterfaces[0].accessConfigs[0].natIP"'.
         format(NODE))
 
-    r = redis.Redis(host=host, port=6379)
-    print('Connected to Redis!')
-
-    p = r.pubsub()
-    p.subscribe('main')
-
     # Listen for messages from Redis
     try:
-        for message in p.listen():
-            if message['type'] != 'message':
-                continue
+        while True:
+            try:
+                r = redis.Redis(host=host, port=6379, socket_timeout=5)
+                p = r.pubsub()
+                p.subscribe('main')
+                print('Connected!')
 
-            data = json.loads(message['data'])
+                for message in p.listen():
+                    if message['type'] != 'message':
+                        continue
 
-            # Execute requested action
-            if data['action'] is not None:
-                action_dispatch[data['action']]()
+                    data = json.loads(message['data'])
 
-            # Send desktop notification
-            sp.check_call(
-                'terminal-notifier -message "{}"'.format(data['message']), shell=True)
+                    # Execute requested action
+                    if data['action'] is not None:
+                        action_dispatch[data['action']]()
+
+                    # Send desktop notification
+                    sp.check_call(
+                        'terminal-notifier -message "{}"'.format(data['message']),
+                        shell=True)
+
+            except (ConnectionError, TimeoutError):
+                print('Retrying...')
+                time.sleep(5)
 
     except Exception:
         sp.check_call('terminal-notifier -message "Notifier crashed"', shell=True)
